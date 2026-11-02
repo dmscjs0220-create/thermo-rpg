@@ -581,6 +581,27 @@
   .rank-table td, .rank-table th { padding: 8px 8px; font-size: 0.88rem; }
   .rank-table td strong { font-size: 0.98rem; }
 
+  /* ===== 점수·시간 큰 칸 ===== */
+  .score-time-box { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-around; gap: 12px; padding: 10px 14px;
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 70%); border: 2px solid #fde047; box-shadow: 0 0 18px rgba(253, 224, 71, 0.18); }
+  .st-cell { flex: 1; text-align: center; min-width: 0; }
+  .st-label { font-size: 0.85rem; font-weight: 800; color: #cbd5e1; }
+  .st-val { font-size: 2.7rem; font-weight: 900; line-height: 1.12; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+  .st-score { color: #fbbf24; text-shadow: 0 0 14px rgba(251, 191, 36, 0.45); }
+  .st-time { color: #38bdf8; text-shadow: 0 0 14px rgba(56, 189, 248, 0.45); }
+  .st-unit { font-size: 1.15rem; margin-left: 4px; color: #fde68a; letter-spacing: 0; }
+  .st-divider { width: 2px; align-self: stretch; background: #334155; border-radius: 2px; }
+  .st-pop { animation: stPop 0.7s ease-out; }
+  @keyframes stPop { 0% { transform: scale(1); } 30% { transform: scale(1.22); color: #fff7ae; } 100% { transform: scale(1); } }
+  @media (max-width: 520px) { .st-val { font-size: 2.35rem; } .score-time-box { padding: 8px 10px; } }
+
+  .score-time-box { margin-bottom: 12px; }
+  .hud-item { min-width: 0; }
+  @media (min-width: 900px) { .st-val { font-size: 3.4rem; } .st-label { font-size: 0.95rem; } }
+  @media (max-width: 640px) { #hud-ap-box, #hud-team-box { grid-column: 1 / -1; } }
+
+  @media (max-width: 520px) { .rank-table td, .rank-table th { padding: 6px 5px; font-size: 0.8rem; } .rank-table td strong { font-size: 0.9rem; } }
+
 </style>
 </head>
 <body>
@@ -611,7 +632,7 @@
         <li><strong>FLOOR 1</strong> 열화학 반응식과 열량 · <strong>FLOOR 2</strong> 헤스 법칙 · <strong>FLOOR 3</strong> 엔트로피와 자발성. 3개 층을 모두 돌파하면 클리어!</li>
         <li><strong>개인전</strong>은 행동력(AP)을 써서 카드를 발동합니다. <strong>3인 협동전</strong>은 서로 다른 정보를 보는 세 클래스가 말로 정보를 주고받고, 각자 PIN을 입력해 합동 공격합니다.</li>
         <li><strong>점수:</strong> 한 번에 정답 <strong>100점</strong> · 한 번 틀리고 정답 <strong>70점</strong> · 두 번 틀리고 정답 <strong>40점</strong> · 세 번 틀리면 0점(정답 공개). 비전서 도움을 받아 풀면 <strong>−20점</strong>, 힌트는 <strong>−30점</strong>이라 도움 없이 한 번에 푸는 것이 가장 높은 점수예요!</li>
-        <li>이름을 쓰고 플레이하면 <strong>랭킹 보드판</strong>에 기록돼요. 화면의 <strong>⏱ 타이머</strong>로 걸린 시간이 재어지고(해설 팝업을 읽는 동안은 멈춰요), <strong>점수가 같으면 더 빨리 끝낸 사람이 위</strong>로 올라갑니다. 끝나면 <strong>점수 코드</strong>를 선생님께 보내세요. (연습 모드는 랭킹에 반영되지 않아요)</li>
+        <li>이름을 쓰고 플레이하면 <strong>랭킹 보드판</strong>에 기록돼요. 화면의 <strong>⏱ 타이머</strong>로 걸린 시간이 재어지고(해설 팝업을 읽는 동안은 멈춰요), <strong>점수가 같으면 더 빨리 끝낸 사람이 위</strong>로 올라갑니다. (연습 모드는 랭킹에 반영되지 않아요)</li>
         <li>틀린 문제는 <strong>오답 노트</strong>에 저장되고, 게임이 끝나면 <strong>학습 리포트</strong>로 개념별 정답률을 볼 수 있습니다.</li>
       </ol>
       <div class="goal">🎯 학습 목표: 열량 계산 · 반응 엔탈피와 헤스 법칙 · 엔트로피와 자발성(ΔH, ΔS, 온도 조건)</div>
@@ -722,7 +743,7 @@
           <button class="mini-btn" onclick="clearRankUrl()">❌ 연결 해제</button>
         </div>
         <div id="rank-conn-status" class="lobby-note" style="margin-top:6px;"></div>
-        <p class="lobby-note">⚠️ 학생들은 <strong>학생용 링크</strong>(웹에 올린 게임 주소 + 서버 주소)로 접속해야 자동 등록됩니다. 서버에 연결이 안 되는 학생은 기존 점수 코드 방식으로 제출할 수 있어요.</p>
+        <p class="lobby-note">⚠️ 학생들은 <strong>학생용 링크</strong>(웹에 올린 게임 주소 + 서버 주소)로 접속해야 자동 등록됩니다. 등록에 실패하면 결과 창의 <strong>다시 등록</strong> 버튼을 눌러 보도록 안내해 주세요.</p>
       </div>
       <p class="lobby-note">내려받은 JSON 을 편집기로 열어 문제를 추가·수정한 뒤 다시 불러오면 됩니다. 객관식은 <code>opts[0]</code>이 정답이며 게임에서 선택지가 자동으로 섞입니다. 불러온 문제은행은 이 기기의 브라우저에만 저장되고, 외부로 전송되지 않습니다.</p>
     </details>
@@ -739,6 +760,11 @@
     </div>
 
     <!-- 상단 HUD -->
+    <div class="hud-item score-time-box" role="group" aria-label="점수와 경과 시간">
+      <div class="st-cell"><div class="st-label">🏆 점수</div><div class="st-val st-score" id="st-score-wrap"><span id="hud-score">0</span><span class="st-unit">점</span></div></div>
+      <div class="st-divider"></div>
+      <div class="st-cell"><div class="st-label">⏱ 경과 시간</div><div class="st-val st-time" id="hud-time">00:00</div></div>
+    </div>
     <div class="hud-bar">
       <div class="hud-item">
         <div class="hud-label"><span>🏰 레이드 층 &amp; 문제 번호</span><span id="stage-diff-badge" class="badge diff-2">★★ 보통</span></div>
@@ -756,7 +782,7 @@
         <div style="font-size:0.75rem; color:#cbd5e1; margin-top:3px;" id="hud-role-desc">기본 타격 50</div>
       </div>
       <div class="hud-item" id="hud-ap-box">
-        <div class="hud-label"><span>⚡ 행동력(AP) &amp; 턴 관리</span><span>🏆 <strong id="hud-score">0</strong>점 · ⏱ <strong id="hud-time" style="color:#fde047;">00:00</strong></span></div>
+        <div class="hud-label"><span>⚡ 행동력(AP) &amp; 턴 관리</span></div>
         <div class="hud-val" id="hud-ap">3 / 3 AP</div>
         <div style="display:flex; gap:5px; margin-top:6px;">
           <button class="mini-btn" id="hud-arcane-btn" style="background:#701a75; border-color:#d946ef; flex:1;" onclick="openArcaneModal()">📜 비전서(+1AP)</button>
@@ -764,7 +790,7 @@
         </div>
       </div>
       <div class="hud-item" id="hud-team-box" style="display:none; border-color:#34d399;">
-        <div class="hud-label"><span>🤝 협동 진행 상황</span><span>🏆 <strong id="hud-score-team">0</strong>점 · ⏱ <strong id="hud-time-team" style="color:#fde047;">00:00</strong></span></div>
+        <div class="hud-label"><span>🤝 협동 진행 상황</span></div>
         <div class="hud-val" id="hud-team-line" style="font-size:0.9rem;">진행 코드 확인</div>
         <div style="font-size:0.73rem; color:#a7f3d0; margin-top:3px;">세 명의 진행 코드가 같아야 같은 상태입니다</div>
       </div>
@@ -3273,7 +3299,12 @@ function updateHUD() {
   const apEl = $('hud-ap'); apEl.textContent = `${G.ap} / ${G.maxAp} AP`; apEl.style.color = G.ap === 0 ? '#fb7185' : '#f8fafc';
   $('bar-end-turn-btn').classList.toggle('pulse-urgent', G.mode === 'solo' && G.ap === 0);
   $('hud-end-turn-btn').classList.toggle('pulse-urgent', G.mode === 'solo' && G.ap === 0);
-  $('hud-score').textContent = G.score; $('hud-score-team').textContent = G.score; renderPlayTime();
+  const sc = $('hud-score');
+  if (String(sc.textContent) !== String(G.score)) {                       // 점수가 바뀌면 살짝 튀어 오르는 효과
+    const up = Number(sc.textContent) < G.score; sc.textContent = G.score;
+    const w = $('st-score-wrap'); w.classList.remove('st-pop'); if (up) { void w.offsetWidth; w.classList.add('st-pop'); }
+  }
+  renderPlayTime();
   $('hud-team-line').textContent = team ? `진행 코드 ${encodeSync()}` : `정답 ${G.attempts.filter(a => a.correct).length} / 시도 ${G.attempts.length}`;
 
   $('boss-floor-tag').textContent = `FLOOR ${G.floor} MASTER`;
@@ -3885,9 +3916,7 @@ function openReport() {
       ⏱ 플레이 시간 <strong>${fmtTime(Math.round(G.playMs / 1000))}</strong> (해설 읽는 시간 제외) · 정답률 <strong>${n ? Math.round(ok / n * 100) : 0}%</strong> (${ok}/${n}) · 한 번에 성공 <strong>${G.firstTry}</strong>문제 · 힌트 ${G.hintsUsed}회 · 약 ${mins}분${G.finished ? '' : ' (진행 중)'}
       ${weakest.length ? `<br>🔎 <strong>복습 추천:</strong> ${esc(weakest.join(', '))}` : ''}
     </div>
-    ${G.scoreCode ? `<div class="sync-box" style="margin-bottom:10px;">🏆 <strong>내 점수 코드</strong> (선생님께 보내면 학급 랭킹 보드판에 올라가요)<br>
-      <span class="sync-code" style="font-size:0.7rem; word-break:break-all; display:block; margin:6px 0;">${esc(G.scoreCode)}</span>
-      <button class="mini-btn" onclick="copyText(G.scoreCode)">📋 점수 코드 복사</button> <button class="mini-btn" onclick="openRankBoard()">🏆 랭킹 보드판 열기</button></div>` : (G.mode === 'practice' ? '<div class="lobby-note" style="margin-bottom:8px;">연습 모드는 랭킹 보드판에 반영되지 않아요.</div>' : '')}
+    ${G.mode === 'practice' ? '<div class="lobby-note" style="margin-bottom:8px;">연습 모드는 랭킹 보드판에 반영되지 않아요.</div>' : ''}
     <table class="report-table"><tr><th>개념</th><th>정답/시도</th><th>정답률</th></tr>${rows || '<tr><td colspan="3">기록 없음</td></tr>'}</table>
     <div style="font-weight:900; color:#fda4af; margin-bottom:6px;">📒 이번 플레이의 오답 (${G.wrongs.length})</div>${wrongHtml}`,
     `<button class="btn btn-primary btn-sm" onclick="copyText(reportSummaryText())">📋 요약 복사</button>
@@ -3921,7 +3950,7 @@ const p2 = n => String(n).padStart(2, '0');
 function fmtTime(sec) { if (!(sec > 0)) return '-'; return p2(Math.floor(sec / 60)) + ':' + p2(sec % 60); }
 function renderPlayTime() {
   const t = G.playMs > 0 ? fmtTime(Math.max(1, Math.floor(G.playMs / 1000))) : '00:00';
-  const a = $('hud-time'), b = $('hud-time-team'); if (a) a.textContent = t; if (b) b.textContent = t;
+  const a = $('hud-time'); if (a) a.textContent = t;
 }
 function playTick() {
   const now = performance.now(), dt = now - G.lastTick; G.lastTick = now;
@@ -4035,13 +4064,12 @@ function rankTable(list, me) {
     return `<tr style="${mine ? 'background:rgba(56,189,248,0.22);' : i < 3 ? 'background:rgba(253,224,71,0.08);' : ''}">
       <td style="text-align:center; font-weight:900;">${MEDAL[i] || i + 1}</td>
       <td><strong>${esc(e.name)}</strong>${mine ? ' <span style="color:#38bdf8; font-weight:900;">← 나</span>' : ''}
-        <div style="color:#94a3b8; font-size:0.72rem;">${e.mode === 'team' ? '협동' : '개인'} · 한 번에 ${e.ft}문제${e.tries > 1 ? ` · ${e.tries}회 도전` : ''}</div></td>
+        <div style="color:#94a3b8; font-size:0.72rem;">${e.mode === 'team' ? '협동' : '개인'} · 한 번에 ${e.ft}문제 · 정답률 ${e.n ? Math.round(e.ok / e.n * 100) : 0}%${e.tries > 1 ? ` · ${e.tries}회 도전` : ''}</div></td>
       <td style="color:#fde047; font-weight:900;">${e.score}점</td>
       <td style="font-weight:800; white-space:nowrap;">⏱ ${fmtTime(e.time)}</td>
-      <td>${e.cleared ? '🏆 클리어' : `FLOOR ${e.floor}`}</td>
-      <td>${e.n ? Math.round(e.ok / e.n * 100) : 0}%</td></tr>`;
+      <td style="white-space:nowrap;">${e.cleared ? '🏆 클리어' : `FLOOR ${e.floor}`}</td></tr>`;
   }).join('');
-  return `<table class="report-table rank-table"><tr><th>순위</th><th>이름</th><th>점수</th><th>시간</th><th>결과</th><th>정답률</th></tr>${rows}</table><div class="lobby-note">점수가 같으면 <strong>시간이 짧은 사람</strong>이 위에 표시돼요.</div>`;
+  return `<table class="report-table rank-table"><tr><th>순위</th><th>이름</th><th>점수</th><th>시간</th><th>결과</th></tr>${rows}</table><div class="lobby-note">점수가 같으면 <strong>시간이 짧은 사람</strong>이 위에 표시돼요.</div>`;
 }
 function bestPerName(arr) {
   const m = new Map();
@@ -4069,7 +4097,7 @@ function openRankBoard(tab) {
   const tabs = `<div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
     ${getRankUrl() ? `<button class="btn btn-sm ${rankTab === 'online' ? 'btn-gold' : 'btn-outline'}" onclick="openRankBoard('online')">🌐 이번 주 랭킹</button>` : ''}
     <button class="btn btn-sm ${rankTab === 'local' ? 'btn-gold' : 'btn-outline'}" onclick="openRankBoard('local')">📱 이 기기 랭킹</button>
-    <button class="btn btn-sm ${rankTab === 'class' ? 'btn-gold' : 'btn-outline'}" onclick="openRankBoard('class')">🏫 점수 코드 모으기 (선생님용)</button></div>`;
+</div>`;
   let body, actions;
   if (rankTab === 'online') {
     body = `${tabs}<div id="rank-online-body"><p style="color:#cbd5e1;">🌐 랭킹을 불러오는 중…</p></div>`;
@@ -4173,7 +4201,7 @@ function refreshRankLine() {
   else if (G.rankStatus === 'ok') {
     const r = G.rankResult || {};
     el.innerHTML = `🏆 <strong>랭킹 등록 완료!</strong> ${r.rank ? `이번 주 <strong>${r.rank}위</strong> / ${r.total}명` : ''} (${G.lastEntry.score}점 · ⏱ ${fmtTime(G.lastEntry.time)})<br><button class="mini-btn" onclick="openRankBoard('online')">🏆 이번 주 랭킹 보기</button>`;
-  } else el.innerHTML = `⚠️ 랭킹 등록에 실패했어요: ${esc(G.rankError || '')}<br>점수 코드는 학습 리포트에 있어요. <button class="mini-btn" onclick="retryRankSubmit()">🔁 다시 등록</button>`;
+  } else el.innerHTML = `⚠️ 랭킹 등록에 실패했어요: ${esc(G.rankError || '')}<br><button class="mini-btn" onclick="retryRankSubmit()">🔁 다시 등록</button>`;
 }
 async function loadOnlineBoard(silent) {
   if (!$('rank-online-body')) return;

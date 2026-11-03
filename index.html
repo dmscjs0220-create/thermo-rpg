@@ -735,15 +735,14 @@
       </div>
       <div style="margin-top:14px; padding-top:12px; border-top:1px solid #475569;">
         <div style="font-weight:900; color:#fde047; margin-bottom:6px;">🌐 실시간 랭킹 서버 연결 (구글 시트 + Apps Script)</div>
-        <p class="lobby-note" style="margin:0 0 8px;">서버 코드(<code>thermo_ranking_apps_script.gs</code>)를 구글 시트에 설치해 배포한 뒤, 나온 <strong>웹 앱 URL(…/exec)</strong>을 아래에 붙여 넣으세요. 연결되면 학생이 게임을 끝내는 순간 점수가 자동 등록되고, 보드판은 <strong>매주 월요일 0시(한국 시간)</strong>에 새로 시작됩니다. 서버에는 <strong>이름(별명)과 점수 기록만</strong> 저장됩니다.</p>
+        <p class="lobby-note" style="margin:0 0 8px;">서버 코드(<code>thermo_ranking_apps_script.gs</code>)를 구글 시트에 설치해 배포한 뒤, 나온 <strong>웹 앱 URL(…/exec)</strong>을 아래에 붙여 넣으세요. 연결되면 학생이 게임을 끝내는 순간 점수가 자동 등록되고, <strong>개인전·협동전 랭킹이 따로</strong> 집계됩니다. 보드판은 <strong>매주 월요일 0시(한국 시간)</strong>에 새로 시작되고, 서버에는 <strong>이름(별명)·점수·시간 기록만</strong> 저장됩니다.</p>
         <input type="text" id="rank-url-input" class="input-field" style="font-size:0.8rem;" placeholder="https://script.google.com/macros/s/…/exec" aria-label="랭킹 서버 주소">
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
           <button class="mini-btn" onclick="saveRankUrlFromInput()">💾 저장 &amp; 연결 테스트</button>
-          <button class="mini-btn" onclick="copyStudentLink()">🔗 학생용 링크 복사</button>
           <button class="mini-btn" onclick="clearRankUrl()">❌ 연결 해제</button>
         </div>
         <div id="rank-conn-status" class="lobby-note" style="margin-top:6px;"></div>
-        <p class="lobby-note">⚠️ 학생들은 <strong>학생용 링크</strong>(웹에 올린 게임 주소 + 서버 주소)로 접속해야 자동 등록됩니다. 등록에 실패하면 결과 창의 <strong>다시 등록</strong> 버튼을 눌러 보도록 안내해 주세요.</p>
+        <p class="lobby-note">서버 주소는 게임 파일에 미리 들어 있어서 <strong>학생들은 게임 주소만 열면</strong> 자동 등록됩니다. 이 칸은 서버 주소를 바꿀 때만 쓰세요. 협동전은 <strong>팀마다 서로 다른 방 코드</strong>를 써야 팀별로 따로 집계돼요.</p>
       </div>
       <p class="lobby-note">내려받은 JSON 을 편집기로 열어 문제를 추가·수정한 뒤 다시 불러오면 됩니다. 객관식은 <code>opts[0]</code>이 정답이며 게임에서 선택지가 자동으로 섞입니다. 불러온 문제은행은 이 기기의 브라우저에만 저장되고, 외부로 전송되지 않습니다.</p>
     </details>
@@ -3708,7 +3707,7 @@ function finishRun() {
   const best = store.get('thermo_best', 0); if (G.score > best) store.set('thermo_best', G.score);
   if (G.mode === 'practice') return;                       // 연습 모드는 랭킹에 반영하지 않음
   const n = G.attempts.length, ok = G.attempts.filter(a => a.correct).length;
-  G.lastEntry = { name: G.name || '이름 없음', score: G.score, floor: G.floor, cleared: G.bossHp <= 0 && G.floor === 3, ok, n, ft: G.firstTry, time: Math.max(1, Math.round(G.playMs / 1000)), mode: G.mode, date: new Date().toLocaleDateString('ko-KR') };
+  G.lastEntry = { name: G.name || '이름 없음', score: G.score, floor: G.floor, cleared: G.bossHp <= 0 && G.floor === 3, ok, n, ft: G.firstTry, time: Math.max(1, Math.round(G.playMs / 1000)), room: G.mode === 'team' ? G.roomCode : 0, mode: G.mode, date: new Date().toLocaleDateString('ko-KR') };
   G.scoreCode = mkCode(G.lastEntry);
   const arr = store.get('thermo_rank_local', []);
   arr.push({ ...G.lastEntry, code: G.scoreCode });
@@ -4053,32 +4052,23 @@ function parseCode(code) {
     return e;
   } catch (err) { return null; }
 }
-let rankTab = 'local', rankBestOnly = true, rankTimerId = null;
+let rankTab = 'local', rankTimerId = null;
 const MEDAL = ['🥇', '🥈', '🥉'];
 const tKey = e => (e.time > 0 ? e.time : 1e9);
 const rankCmp = (a, b) => b.score - a.score || (b.cleared ? 1 : 0) - (a.cleared ? 1 : 0) || tKey(a) - tKey(b);
 function rankTable(list, me) {
   if (!list.length) return '<p style="color:#cbd5e1;">아직 기록이 없어요. 첫 번째 주인공이 되어 보세요!</p>';
   const rows = list.map((e, i) => {
-    const mine = me && e.name.trim().toLowerCase() === String(me).trim().toLowerCase();
+    const mine = me && e.name.split('·').map(x => x.trim().toLowerCase()).indexOf(String(me).trim().toLowerCase()) >= 0;
     return `<tr style="${mine ? 'background:rgba(56,189,248,0.22);' : i < 3 ? 'background:rgba(253,224,71,0.08);' : ''}">
       <td style="text-align:center; font-weight:900;">${MEDAL[i] || i + 1}</td>
       <td><strong>${esc(e.name)}</strong>${mine ? ' <span style="color:#38bdf8; font-weight:900;">← 나</span>' : ''}
-        <div style="color:#94a3b8; font-size:0.72rem;">${e.mode === 'team' ? '협동' : '개인'} · 한 번에 ${e.ft}문제 · 정답률 ${e.n ? Math.round(e.ok / e.n * 100) : 0}%${e.tries > 1 ? ` · ${e.tries}회 도전` : ''}</div></td>
+        <div style="color:#94a3b8; font-size:0.72rem;">${e.mode === 'team' ? `협동 · ${e.members || 1}명` : '개인'} · 한 번에 ${e.ft}문제 · 정답률 ${e.n ? Math.round(e.ok / e.n * 100) : 0}%${e.tries > 1 ? ` · ${e.tries}회 도전` : ''}</div></td>
       <td style="color:#fde047; font-weight:900;">${e.score}점</td>
       <td style="font-weight:800; white-space:nowrap;">⏱ ${fmtTime(e.time)}</td>
       <td style="white-space:nowrap;">${e.cleared ? '🏆 클리어' : `FLOOR ${e.floor}`}</td></tr>`;
   }).join('');
   return `<table class="report-table rank-table"><tr><th>순위</th><th>이름</th><th>점수</th><th>시간</th><th>결과</th></tr>${rows}</table><div class="lobby-note">점수가 같으면 <strong>시간이 짧은 사람</strong>이 위에 표시돼요.</div>`;
-}
-function bestPerName(arr) {
-  const m = new Map();
-  arr.forEach(e => {
-    const k = e.name.trim().toLowerCase(), cur = m.get(k);
-    if (!cur) m.set(k, { ...e, tries: 1 });
-    else { const tries = cur.tries + 1; if (rankCmp(e, cur) < 0) m.set(k, { ...e, tries }); else cur.tries = tries; }
-  });
-  return [...m.values()];
 }
 function stopRankTimer() { if (rankTimerId) { clearInterval(rankTimerId); rankTimerId = null; } }
 function fmtWeek(key) {
@@ -4092,62 +4082,26 @@ function fmtRemain(ms) {
 }
 function openRankBoard(tab) {
   stopRankTimer();
-  if (!tab) tab = getRankUrl() ? 'online' : rankTab;
-  rankTab = (tab === 'online' && !getRankUrl()) ? 'local' : tab;
-  const tabs = `<div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
-    ${getRankUrl() ? `<button class="btn btn-sm ${rankTab === 'online' ? 'btn-gold' : 'btn-outline'}" onclick="openRankBoard('online')">🌐 이번 주 랭킹</button>` : ''}
-    <button class="btn btn-sm ${rankTab === 'local' ? 'btn-gold' : 'btn-outline'}" onclick="openRankBoard('local')">📱 이 기기 랭킹</button>
-</div>`;
-  let body, actions;
-  if (rankTab === 'online') {
-    body = `${tabs}<div id="rank-online-body"><p style="color:#cbd5e1;">🌐 랭킹을 불러오는 중…</p></div>`;
-    actions = `<button class="btn btn-primary btn-sm" onclick="loadOnlineBoard()">🔄 새로고침</button><button class="btn btn-outline btn-sm" onclick="closeReport()">닫기</button>`;
-    openModal('🏆 이번 주 랭킹 보드판', body, actions);
-    loadOnlineBoard();
-    rankTimerId = setInterval(() => { if (rankTab === 'online' && $('report-modal').classList.contains('active')) loadOnlineBoard(true); else stopRankTimer(); }, 20000);
-    return;
-  }
+  const online = !!getRankUrl();
+  if (tab !== 'solo' && tab !== 'team' && tab !== 'local') tab = online ? (G.mode === 'team' ? 'team' : 'solo') : 'local';
+  if (!online) tab = 'local';
+  rankTab = tab;
+  const tb = (t, label) => `<button class="btn btn-sm ${rankTab === t ? 'btn-gold' : 'btn-outline'}" onclick="openRankBoard('${t}')">${label}</button>`;
+  const tabs = `<div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">${online ? tb('solo', '🧙 개인전 랭킹') + tb('team', '🛡️ 협동전 랭킹') : ''}${tb('local', '📱 이 기기 랭킹')}</div>`;
   if (rankTab === 'local') {
     const list = [...store.get('thermo_rank_local', [])].sort(rankCmp).slice(0, 20);
-    body = `${tabs}<div class="lobby-note" style="margin-bottom:8px;">이 기기에서 끝낸 판이 자동으로 기록돼요. (연습 모드 제외)</div>${rankTable(list)}`;
-    actions = `<button class="btn btn-outline btn-sm" onclick="clearBoard('thermo_rank_local','local')">🗑️ 이 기기 기록 비우기</button><button class="btn btn-outline btn-sm" onclick="closeReport()">닫기</button>`;
-  } else {
-    const all = store.get('thermo_rank_class', []);
-    const list = (rankBestOnly ? bestPerName(all) : all).sort(rankCmp);
-    body = `${tabs}<div class="lobby-note" style="margin-bottom:8px;">(서버가 없을 때 쓰는 방식) 학생들이 보낸 <strong>점수 코드(TR1.으로 시작)</strong>를 아래에 붙여 넣으세요. 카톡 메시지를 통째로 붙여 넣어도 코드만 찾아 줍니다. 같은 코드는 한 번만 반영돼요.</div>
-      <textarea id="rank-paste" rows="3" style="width:100%; background:#020617; color:#f8fafc; border:2px solid #6366f1; border-radius:10px; padding:8px; font-size:0.8rem;" placeholder="여기에 학생들의 점수 코드를 붙여 넣으세요 (여러 개 가능)"></textarea>
-      <div style="display:flex; gap:6px; margin:8px 0; flex-wrap:wrap;">
-        <button class="btn btn-primary btn-sm" onclick="addClassCodes()">➕ 코드 추가하기</button>
-        <button class="btn btn-secondary btn-sm" onclick="rankBestOnly=!rankBestOnly; openRankBoard('class')">${rankBestOnly ? '이름별 최고 점수만 보는 중 (눌러서 전체 기록 보기)' : '전체 기록 보는 중 (눌러서 이름별 최고만 보기)'}</button></div>
-      ${rankTable(list)}<div class="lobby-note">총 ${all.length}건 저장됨 · 이 기기의 브라우저에만 저장됩니다.</div>`;
-    actions = `<button class="btn btn-secondary btn-sm" onclick="downloadClassCsv()">⬇️ CSV 저장</button><button class="btn btn-outline btn-sm" onclick="clearBoard('thermo_rank_class','class')">🗑️ 기록 비우기</button><button class="btn btn-outline btn-sm" onclick="closeReport()">닫기</button>`;
+    openModal('🏆 랭킹 보드판', `${tabs}<div class="lobby-note" style="margin-bottom:8px;">이 기기에서 끝낸 판이 자동으로 기록돼요. (연습 모드 제외)</div>${rankTable(list)}`,
+      `<button class="btn btn-outline btn-sm" onclick="clearBoard('thermo_rank_local','local')">🗑️ 이 기기 기록 비우기</button><button class="btn btn-outline btn-sm" onclick="closeReport()">닫기</button>`);
+    return;
   }
-  openModal('🏆 랭킹 보드판', body, actions);
-}
-function addClassCodes() {
-  const txt = ($('rank-paste') || {}).value || '';
-  const found = txt.match(/TR1\.[A-Za-z0-9_-]+\.[0-9A-Z]+/g) || [];
-  if (!found.length) { toast('점수 코드(TR1.으로 시작)를 찾지 못했어요.'); return; }
-  const arr = store.get('thermo_rank_class', []); let added = 0, dup = 0, bad = 0;
-  found.forEach(c => {
-    if (arr.some(x => x.code === c)) { dup++; return; }
-    const e = parseCode(c); if (!e) { bad++; return; }
-    arr.push({ ...e, code: c }); added++;
-  });
-  store.set('thermo_rank_class', arr);
-  openRankBoard('class');
-  toast(`${added}건 추가 · 중복 ${dup}건 · 확인 실패 ${bad}건${bad ? ' (코드가 잘렸거나 고쳐졌을 수 있어요)' : ''}`, 4500);
+  openModal(rankTab === 'team' ? '🏆 협동전 랭킹 보드판' : '🏆 개인전 랭킹 보드판', `${tabs}<div id="rank-online-body"><p style="color:#cbd5e1;">🌐 랭킹을 불러오는 중…</p></div>`,
+    `<button class="btn btn-primary btn-sm" onclick="loadOnlineBoard()">🔄 새로고침</button><button class="btn btn-outline btn-sm" onclick="closeReport()">닫기</button>`);
+  loadOnlineBoard();
+  rankTimerId = setInterval(() => { if ((rankTab === 'solo' || rankTab === 'team') && $('report-modal').classList.contains('active')) loadOnlineBoard(true); else stopRankTimer(); }, 20000);
 }
 function clearBoard(key, tab) {
   if (!clearBoard._armed) { clearBoard._armed = true; toast('한 번 더 누르면 기록이 모두 삭제됩니다.'); setTimeout(() => { clearBoard._armed = false; }, 3500); return; }
   clearBoard._armed = false; store.del(key); openRankBoard(tab); toast('기록을 비웠어요.');
-}
-function downloadClassCsv() {
-  const all = store.get('thermo_rank_class', []);
-  const list = (rankBestOnly ? bestPerName(all) : all).sort(rankCmp);
-  const head = ['순위', '이름', '점수', '시간', '결과', '도달 층', '한 번에 성공', '정답률(%)', '모드'];
-  const rows = list.map((e, i) => [i + 1, e.name, e.score, fmtTime(e.time), e.cleared ? '클리어' : '미클리어', e.floor, e.ft, e.n ? Math.round(e.ok / e.n * 100) : 0, e.mode === 'team' ? '협동' : '개인']);
-  downloadText('열역학RPG_학급랭킹.csv', '\ufeff' + [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
 }
 
 
@@ -4178,14 +4132,16 @@ function jsonp(params, timeoutMs) {
     document.head.appendChild(s);
   });
 }
+function rankSig3(p) { return hash32([p.name, p.score, p.floor, p.cleared, p.ok, p.n, p.ft, p.mode, p.runId, p.time, p.room].join('~') + CODE_SALT).toString(36).toUpperCase(); }
 function rankSig2(p) { return hash32([p.name, p.score, p.floor, p.cleared, p.ok, p.n, p.ft, p.mode, p.runId, p.time].join('~') + CODE_SALT).toString(36).toUpperCase(); }
 function rankSig(p) { return hash32([p.name, p.score, p.floor, p.cleared, p.ok, p.n, p.ft, p.mode, p.runId].join('~') + CODE_SALT).toString(36).toUpperCase(); }
 async function submitRank() {
   const e = G.lastEntry; if (!e || !getRankUrl()) return;
   G.rankStatus = 'sending'; refreshRankLine();
-  const p = { action: 'submit', name: e.name, score: e.score, floor: e.floor, cleared: e.cleared ? 1 : 0, ok: e.ok, n: e.n, ft: e.ft, mode: e.mode, runId: G.runId, time: e.time || 0 };
-  p.sig = rankSig(p);     // 이전 서버와도 호환되는 서명(시간 제외)
-  p.sig2 = rankSig2(p);   // 새 서버용 서명(시간 포함)
+  const p = { action: 'submit', name: e.name, score: e.score, floor: e.floor, cleared: e.cleared ? 1 : 0, ok: e.ok, n: e.n, ft: e.ft, mode: e.mode, runId: G.runId, time: e.time || 0, room: e.room || 0 };
+  p.sig = rankSig(p);     // 가장 이전 서버와도 호환되는 서명
+  p.sig2 = rankSig2(p);   // 시간 포함 서명
+  p.sig3 = rankSig3(p);   // 시간 + 방 코드 포함 서명 (협동전 팀별 집계용)
   try {
     const d = await jsonp(p);
     if (d && d.ok) { G.rankStatus = 'ok'; G.rankResult = d; } else { G.rankStatus = 'fail'; G.rankError = (d && d.error) || '알 수 없는 오류'; }
@@ -4200,22 +4156,30 @@ function refreshRankLine() {
   if (G.rankStatus === 'sending') el.innerHTML = '🌐 랭킹에 등록하는 중이에요…';
   else if (G.rankStatus === 'ok') {
     const r = G.rankResult || {};
-    el.innerHTML = `🏆 <strong>랭킹 등록 완료!</strong> ${r.rank ? `이번 주 <strong>${r.rank}위</strong> / ${r.total}명` : ''} (${G.lastEntry.score}점 · ⏱ ${fmtTime(G.lastEntry.time)})<br><button class="mini-btn" onclick="openRankBoard('online')">🏆 이번 주 랭킹 보기</button>`;
+    const team = G.lastEntry.mode === 'team';
+    el.innerHTML = `🏆 <strong>랭킹 등록 완료!</strong> ${r.rank ? `이번 주 ${team ? '협동전' : '개인전'} <strong>${r.rank}위</strong> / ${r.total}${team ? '팀' : '명'}` : ''} (${G.lastEntry.score}점 · ⏱ ${fmtTime(G.lastEntry.time)})<br><button class="mini-btn" onclick="openRankBoard()">🏆 ${team ? '협동전' : '개인전'} 랭킹 보기</button>`;
   } else el.innerHTML = `⚠️ 랭킹 등록에 실패했어요: ${esc(G.rankError || '')}<br><button class="mini-btn" onclick="retryRankSubmit()">🔁 다시 등록</button>`;
 }
 async function loadOnlineBoard(silent) {
   if (!$('rank-online-body')) return;
+  const mode = rankTab === 'team' ? 'team' : 'solo';
   if (!silent) $('rank-online-body').innerHTML = '<p style="color:#cbd5e1;">🌐 랭킹을 불러오는 중…</p>';
   let html;
   try {
     const d = await jsonp({ action: 'board' });
     if (!d || !d.ok) html = `<p>⚠️ ${esc((d && d.error) || '랭킹을 불러오지 못했어요.')}</p>`;
     else {
-      const last = (d.lastWeekTop && d.lastWeekTop.length) ? `<div class="lobby-note" style="margin-top:8px;">🏅 <strong>지난주 TOP ${d.lastWeekTop.length}:</strong> ${d.lastWeekTop.map((x, i) => `${MEDAL[i]} ${esc(x.name)} ${x.score}점`).join(' · ')}</div>` : '';
-      html = `<div class="clean-guide-box" style="margin-bottom:8px;">📅 <strong>이번 주 랭킹</strong> (${fmtWeek(d.week)}) · 참가 ${d.total}명<br>⏳ 다음 초기화(월요일 0시)까지 <strong>${fmtRemain(d.resetInMs)}</strong></div>${rankTable(d.board, G.name)}${last}<div class="lobby-note">20초마다 자동 새로고침 · 서버에는 이름(별명)과 점수 기록만 저장됩니다.</div>`;
+      const all = d.board || [];                                   // 이전 서버(개인전/협동전 구분 없음)면 모드로 나눠 보여줌
+      const list = mode === 'team' ? (d.teamBoard || all.filter(e => e.mode === 'team')) : (d.soloBoard || all.filter(e => e.mode !== 'team'));
+      const total = mode === 'team' ? (d.totalTeam != null ? d.totalTeam : list.length) : (d.totalSolo != null ? d.totalSolo : list.length);
+      const lastTop = mode === 'team' ? d.lastWeekTopTeam : d.lastWeekTop;
+      const unit = mode === 'team' ? '팀' : '명', label = mode === 'team' ? '협동전' : '개인전';
+      const last = (lastTop && lastTop.length) ? `<div class="lobby-note" style="margin-top:8px;">🏅 <strong>지난주 ${label} TOP ${lastTop.length}:</strong> ${lastTop.map((x, i) => `${MEDAL[i]} ${esc(x.name)} ${x.score}점`).join(' · ')}</div>` : '';
+      const teamNote = mode === 'team' ? '<div class="lobby-note" style="margin-top:6px;">🛡️ 같은 <strong>방 코드</strong>로 플레이한 팀원들이 한 팀으로 묶여 표시돼요. (팀의 최고 기록 기준)</div>' : '';
+      html = `<div class="clean-guide-box" style="margin-bottom:8px;">📅 <strong>이번 주 ${label} 랭킹</strong> (${fmtWeek(d.week)}) · 참가 ${total}${unit}<br>⏳ 다음 초기화(월요일 0시)까지 <strong>${fmtRemain(d.resetInMs)}</strong></div>${rankTable(list, G.name)}${teamNote}${last}<div class="lobby-note">20초마다 자동 새로고침 · 서버에는 이름(별명)·점수·시간 기록만 저장됩니다.</div>`;
     }
-  } catch (err) { html = '<p>⚠️ 서버에 연결하지 못했어요. 인터넷 연결과 선생님이 알려 준 링크를 확인해 주세요.</p>'; }
-  const box = $('rank-online-body'); if (box && rankTab === 'online') box.innerHTML = html;
+  } catch (err) { html = '<p>⚠️ 서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.</p>'; }
+  const box = $('rank-online-body'); if (box && (rankTab === 'solo' || rankTab === 'team')) box.innerHTML = html;
 }
 /* ---- 교사용 도구 ---- */
 function saveRankUrlFromInput() {
@@ -4231,12 +4195,6 @@ async function testRankUrl() {
   } catch (err) { st.textContent = '⚠️ 연결 실패: 주소가 맞는지, 배포의 액세스 권한이 "모든 사용자"인지 확인하세요.'; }
 }
 function clearRankUrl() { RANK_URL_MEM = 'off'; store.set('thermo_rank_url', 'off'); $('rank-url-input').value = ''; $('rank-conn-status').textContent = '이 기기에서 랭킹 서버 연결을 해제했어요. (다시 연결하려면 주소를 입력하고 저장하세요)'; refreshLobbyInfo(); }
-function copyStudentLink() {
-  const u = getRankUrl(); if (!u) { toast('먼저 서버 주소를 저장해 주세요.'); return; }
-  const link = location.href.split('#')[0].split('?')[0] + '?rank=' + encodeURIComponent(u);
-  copyText(link);
-  if (location.protocol === 'file:') setTimeout(() => toast('⚠️ 지금은 파일로 열려 있어요. 게임을 웹에 올린 주소에서 이 버튼을 눌러야 학생들이 쓸 수 있는 링크가 만들어져요.', 7000), 500);
-}
 
 /* 초기화는 모든 선언(const/let)이 끝난 뒤, 파일 맨 끝에서 실행 */
 /* ---------- 초기화 ---------- */

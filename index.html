@@ -602,6 +602,15 @@
 
   @media (max-width: 520px) { .rank-table td, .rank-table th { padding: 6px 5px; font-size: 0.8rem; } .rank-table td strong { font-size: 0.9rem; } }
 
+  /* 1층: 정답 조건 강조 */
+  .must-note { background: rgba(253, 224, 71, 0.16); border: 2px solid #fde047; border-radius: 10px; padding: 9px 12px; margin-bottom: 10px;
+    font-size: 1.02rem; font-weight: 900; line-height: 1.55; color: #fef9c3; }
+  .must-note strong { font-weight: 900; color: #ffffff; }
+  .must-note strong:nth-of-type(2), .must-note strong:nth-of-type(3) { color: #fde047; text-decoration: underline; text-underline-offset: 3px; }
+
+  .must-note strong:first-of-type { color: #ffffff; text-decoration: none; }
+  .must-note strong:not(:first-of-type) { color: #fde047; text-decoration: underline; text-underline-offset: 3px; }
+
 </style>
 </head>
 <body>
@@ -3014,6 +3023,7 @@ function renderMissionBoard() {
   const enc = G.enc, team = isTeam();
   const rel = enc.vis === 'heat' ? ['eq', 'dh', 'moles'] : ['eq', 'dh', 'mw'];
   $('stage-board').innerHTML = `
+    <div class="must-note">⚠️ <strong>정답 조건:</strong> <strong>① 알맞은 카드를 고르고</strong> <strong>② 정반응/역반응 방향까지 맞춰야</strong> 정답입니다!</div>
     <div class="mission-title">
       <span>🔬 FLOOR 1 전술 가이드 &amp; 계산 공식</span>
       <span style="font-size:0.8rem; color:#fde047;">${team ? '내 클래스: ' + RPG_CLASSES[G.myRole].shortName : '기본 타격 50 HP (비전 버프 시 75 HP)'}</span>
@@ -3069,6 +3079,7 @@ function selectMissionCard(cid) { G.enc.selCardId = cid; renderBoard(); }
 function renderHessBoard() {
   const enc = G.enc, team = isTeam();
   $('stage-board').innerHTML = `
+    <div class="must-note">⚠️ <strong>정답 조건:</strong> <strong>① 반응식을 완성하고(방향·배율)</strong> <strong>② 목표 반응의 ΔH까지 맞춰야</strong> 정답입니다!</div>
     <div class="mission-title">
       <span>⚗️ FLOOR 2 헤스 법칙(총열량 불변) 마법진</span>
       <span class="badge" style="background:#312e81; color:#e0e7ff;">목표 ΔH = 단계별 ΔH 의 합</span>
@@ -3134,6 +3145,7 @@ function renderSpontBoard() {
   }
   const pinLine = (role, label) => team && G.myRole === role ? `<div style="margin-top:6px; font-size:0.8rem;">${label} PIN: <span class="pin-badge">${spontPin(enc, role)}</span></div>` : '';
   $('stage-board').innerHTML = `
+    <div class="must-note">⚠️ <strong>정답 조건:</strong> <strong>① ΔS ② ΔH ③ 자발성 온도 조건, 3가지를 모두 맞춰야</strong> 정답입니다!</div>
     <div class="mission-title"><span>⚖️ FLOOR 3 자발성 천칭 룬 세팅 보드</span><span style="font-size:0.8rem; color:#fde047;">3개 슬롯을 모두 선택하세요!</span></div>
     <div class="clean-guide-box" style="margin-bottom:10px;">
       • <strong>🧙‍♂️ 입자 상태·기체 몰수 단서:</strong> ${stateDisplay}<br>
@@ -3443,13 +3455,15 @@ function preAttempt() {
 function playMissionCard(cid) {
   if (!preAttempt()) return;
   const enc = G.enc, card = enc.cards[cid];
-  const correct = (cid === enc.targetCardId && card.flipped === enc.reqFlip);
+  const cardOk = (cid === enc.targetCardId), dirOk = (card.flipped === enc.reqFlip);
+  const correct = cardOk && dirOk;
   const dirTxt = card.flipped ? '역반응' : '정반응';
+  const hint = `선택한 카드가 조건에 맞지 않아요. 공식(총 열량 = 몰수 × |ΔH|, 1g당 열량 = |ΔH| ÷ 분자량)과 <strong>정반응/역반응 방향</strong>을 다시 확인해 보세요.`;   // 무엇이 틀렸는지는 학생이 직접 찾도록 원래 문구 유지
   resolveSolo({
     correct, mine: `${card.slotLabel} ${card.name} (${dirTxt})`, emoji: card.flipped ? '❄️' : '🔥', bonus: 0,
-    afterWrong: () => { if (cid !== enc.targetCardId && !enc.eliminated.includes(cid)) enc.eliminated.push(cid); },
+    afterWrong: () => { if (!cardOk && !enc.eliminated.includes(cid)) enc.eliminated.push(cid); },
     okDetail: `✅ <strong>검증 완료:</strong><br>${enc.explainHtml}`,
-    hintDetail: `선택한 카드가 조건에 맞지 않아요. 공식(총 열량 = 몰수 × |ΔH|, 1g당 열량 = |ΔH| ÷ 분자량)과 <strong>정반응/역반응 방향</strong>을 다시 확인해 보세요.`,
+    hintDetail: hint,
     missDetail: `❌ <strong>내 선택:</strong> ${esc(card.slotLabel)} ${esc(card.name)} (${dirTxt})<br>💡 <strong>정답:</strong> ${esc(enc.answerText)}<br><br>${enc.explainHtml}`
   });
 }
